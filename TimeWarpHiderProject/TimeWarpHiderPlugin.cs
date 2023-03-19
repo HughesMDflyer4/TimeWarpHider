@@ -1,8 +1,7 @@
 ﻿using BepInEx;
 using HarmonyLib;
 using KSP.Game;
-using KSP.Messages;
-using RTG;
+using KSP.UI.Flight;
 using SpaceWarp;
 using SpaceWarp.API.Mods;
 using UnityEngine;
@@ -19,29 +18,17 @@ public class TimeWarpHiderPlugin : BaseSpaceWarpPlugin
 
     public static TimeWarpHiderPlugin Instance { get; set; }
 
-    private GameObject timeWarpGameObject;
-    private GameObject gameViewGameObject;
-
     public override void OnInitialized()
     {
         base.OnInitialized();
         Instance = this;
-        Harmony.CreateAndPatchAll(typeof(TimeWarpHiderPlugin).Assembly);
-
-        GameManager.Instance.Game.Messages.Subscribe<VesselCreatedMessage>(OnLoaded);
-        GameManager.Instance.Game.Messages.Subscribe<VesselChangedMessage>(OnLoaded);
+        Harmony.CreateAndPatchAll(typeof(TimeWarpHiderPlugin));
     }
 
-    private void OnLoaded(MessageCenterMessage message)
+    [HarmonyPatch(typeof(UIFlightHud), nameof(UIFlightHud.OnFlightHudCanvasActiveChanged))]
+    [HarmonyPostfix]
+    public static void OnFlightHudCanvasActiveChanged(bool isVisible)
     {
-        GameManager.Instance.Game.UI.FlightHud.onFlightHudCanvasActiveChanged += new Action<bool>(OnFlightHudToggled);
-        timeWarpGameObject = GameManager.Instance.Game.UI.GetRootCanvas().gameObject.GetAllChildren().Where(g => g.name == "group_instruments(Clone)").FirstOrDefault();
-        gameViewGameObject = GameManager.Instance.Game.UI.GetRootCanvas().gameObject.GetAllChildren().Where(g => g.name == "group_gameview(Clone)").FirstOrDefault();
-    }
-
-    private void OnFlightHudToggled(bool isEnabled)
-    {
-        timeWarpGameObject.SetActive(isEnabled);
-        gameViewGameObject.SetActive(isEnabled);
+        GameManager.Instance.Game.UI.FlightHud.gameObject.SetActive(isVisible);
     }
 }
